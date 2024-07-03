@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "330483178484",
+    "firebase_url": "https://game-e1b67-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "game-e1b67",
+    "storage_bucket": "game-e1b67.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330483178484:android:df14bb14b407080a8977a1",
+        "android_client_info": {
+          "package_name": "com.app.bhangari"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "330483178484-hdsqavnedg4h05gm2at2l1mnnr9f0mj7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPSq24Y3ii6lt81aCC-bCD14GgrAtZuo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "330483178484-hdsqavnedg4h05gm2at2l1mnnr9f0mj7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "330483178484-qdk91s24579f93n9ns6n1vho89qlsja5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.game.rockPaperScissors"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
