@@ -1,18 +1,18 @@
 
 import 'package:bhangari/data/application_model.dart';
 import 'package:bhangari/service/background_services.dart';
-import 'package:bhangari/service/location_service.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/home/home_bloc.dart';
 import '../bloc/home/home_event.dart';
 import '../bloc/home/home_state.dart';
 import '../data/firebaseDB_model.dart';
+import '../data/location_model.dart';
+import '../service/database.dart';
 import '../utils.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,19 +27,26 @@ class _HomePageState extends State<HomePage> {
 
   bool isTicketAssign = false;
   FirebaseDBModel firebaseDB = FirebaseDBModel();
-  List<String> latLongList = [];
+  late Future<List<Location>> locations;
 
   @override
   void initState(){
     super.initState();
     context.read<HomeBloc>().add(GetApplicationList());
+    locations = DatabaseHelper.instance.fetchLocations();
     firebaseListener();
   }
-
+  Future<void> refreshLocations() async {
+    setState(() {
+      locations = DatabaseHelper.instance.fetchLocations();
+    });
+  }
 
   void firebaseListener()async {
     await backgroundServiceRegister();
+
     DatabaseReference fireData = FirebaseDatabase.instance.ref("/FieldForce/AssignTicket");
+
     fireData.child('L3T2167').onValue.listen((DatabaseEvent event) {
       DataSnapshot dataSnapshot = event.snapshot;
       Map<dynamic, dynamic> values = dataSnapshot.value as Map;
@@ -49,9 +56,9 @@ class _HomePageState extends State<HomePage> {
       });
 
       if (firebaseDB.isTicketAssign == true) {
-        FlutterBackgroundService().startService();
+        startBackgroundService();
       } else {
-        FlutterBackgroundService().invoke('stopService');
+        stopBackgroundService();
       }
 
     });
@@ -72,19 +79,63 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: BlocBuilder<HomeBloc, HomeState>(
           builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                isTicketAssign == true
-                    ? const Icon(Icons.location_on_rounded, size: 40, color: Colors.green)
-                    : const Icon(Icons.location_disabled, size: 40, color: Colors.red),
-                const SizedBox(height: 10),
-                Center(
-                  child: Text("Location Service is ${isTicketAssign ? 'ON' : 'OFF'}",
-                      style: const TextStyle(fontSize: 20,color: Colors.black)),
-                )
-              ],
+            return RefreshIndicator(
+              onRefresh: () { return refreshLocations();},
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      isTicketAssign == true
+                          ? const Icon(Icons.location_on_rounded, size: 40, color: Colors.green)
+                          : const Icon(Icons.location_disabled, size: 40, color: Colors.red),
+                      const SizedBox(width: 10),
+                      Center(
+                        child: Text("Location Service is ${isTicketAssign ? 'ON' : 'OFF'}",
+                            style: const TextStyle(fontSize: 20,color: Colors.black)),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: StreamBuilder<List<Location>>(
+                      stream: DatabaseHelper.instance.fetchLocationsStream(), // Adjust this line according to your actual implementation
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        switch (snapshot.connectionState) {
+                          case ConnectionState.none:
+                            return Text('Not connected to the Stream or null.');
+                          case ConnectionState.waiting:
+                            return CircularProgressIndicator();
+                          case ConnectionState.active:
+                          case ConnectionState.done:
+                            if (snapshot.hasData) {
+                              final locations = snapshot.data!;
+                              if(locations.length> 10){
+                                DatabaseHelper.instance.deleteAllExceptLast10IfMoreThan10();
+                              }
+                              return ListView.builder(
+                                itemCount: locations.length,
+                                itemBuilder: (context, index) {
+                                  final location = locations[index];
+                                  return ListTile(
+                                    title: Text('Latitude: ${location.latitude}, Longitude: ${location.longitude}'),
+                                  );
+                                },
+                              );
+                            } else {
+                              return Text('No data');
+                            }
+                        }
+                      },
+                    ),
+                  )
+                ],
+              ),
             );
             return SingleChildScrollView(
               child: Column(

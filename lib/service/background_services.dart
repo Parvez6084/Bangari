@@ -7,8 +7,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
-
 import '../data/firebaseDB_model.dart';
+import '../data/location_model.dart';
+import 'database.dart';
 
 
 
@@ -96,9 +97,11 @@ void onStart(ServiceInstance service) async {
     );
   }
 
-  positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position? position) {
-    String latLong = position == null ? 'Unknown' : 'Lat - ${position.latitude.toString()}, Lng - ${position.longitude.toString()}';
-    print('>>>>>>Location Service: $latLong');
+  positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position? position) async{
+    if (position != null) {
+      final location = Location(latitude: position.latitude, longitude: position.longitude);
+      await DatabaseHelper.instance.insertLocation(location);
+    }
   });
 
   service.on('stopService').listen((event) async {
